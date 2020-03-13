@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"sync"
+	"time"
 )
 import "math"
 
@@ -135,11 +137,75 @@ func NastyAdds(a int64, c chan int64) {
 	}
 	c <- sum
 }
-func main() {
-	//path := "C:\\Users\\Alex\\Documents\\apex_crash.txt"
-	channel := make(chan int64)
+func bufferedchannelpractice() {
+	channel := make(chan int64, 3)
 	go NastyAdds(2224, channel)
 	go NastyAdds(1432, channel)
-	x, y := <-channel, <-channel
-	fmt.Println(x, y)
+	channel <- 12323
+	x, y, z := <-channel, <-channel, <-channel
+	fmt.Printf("%v,%v,%v\n", x, y, z)
+	go NastyAdds(1, channel)
+	go NastyAdds(51551, channel)
+	go NastyAdds(14454, channel)
+	go NastyAdds(14454, channel)
+	x, y, z = <-channel, <-channel, <-channel
+	fmt.Printf("%v,%v,%v\n", x, y, z)
+}
+func closedChannelPractice() {
+	channel := make(chan int64, 10)
+	NastyAdds(11, channel)
+	NastyAdds(555, channel)
+	NastyAdds(112, channel)
+	NastyAdds(1511, channel)
+	NastyAdds(12311, channel)
+	close(channel)
+
+	for {
+		val, ok := <-channel
+		if ok {
+			fmt.Println(val)
+		} else {
+			break
+		}
+	}
+}
+func selectPractice() {
+	channel1 := make(chan int64)
+	channel2 := make(chan int64)
+	channel3 := make(chan int64)
+	go NastyAdds(114334, channel1)
+	go NastyAdds(166514, channel2)
+	go NastyAdds(887714, channel3)
+	time.Sleep(10 * time.Second)
+	fmt.Println("waiting...")
+	select {
+	case <-channel1:
+		fmt.Println("now you are ready.....")
+		break
+	case <-channel2:
+		fmt.Println("j")
+	case <-channel3:
+		fmt.Println("dd")
+	default:
+		fmt.Println("nothing was ready")
+	}
+}
+
+func mutexPractice(a *int, mutex *sync.Mutex, wait *sync.WaitGroup) {
+	mutex.Lock()
+	*a += 1
+	defer mutex.Unlock()
+	fmt.Println(*a)
+	wait.Done()
+}
+func main() {
+	//path := "C:\\Users\\Alex\\Documents\\apex_crash.txt"
+	mutex := sync.Mutex{}
+	wait := sync.WaitGroup{}
+	a := 0
+	for i := 0; i < 1000; i++ {
+		wait.Add(1)
+		go mutexPractice(&a, &mutex, &wait)
+	}
+	wait.Wait()
 }
